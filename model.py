@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 class SEBlock(nn.Module):
     """Squeeze-and-Excitation Attention Module"""
@@ -55,7 +54,6 @@ class ResNetSEBrainTumor(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True)
         )
-        # Stages corresponding to increasing depth
         self.layer1 = ResidualSEBlock(32, 64, stride=2)
         self.layer2 = ResidualSEBlock(64, 128, stride=2)
         self.layer3 = ResidualSEBlock(128, 256, stride=2)
@@ -65,7 +63,6 @@ class ResNetSEBrainTumor(nn.Module):
         self.fc = nn.Linear(512, num_classes)
 
     def forward_features(self, x):
-        """Returns intermediate layer activations for Linear Depth Probing"""
         feats = []
         x = self.prep(x)
         x = self.layer1(x); feats.append(x)
