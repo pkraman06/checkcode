@@ -3,14 +3,16 @@ import torch
 import torch.nn as nn
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
-from dataset import BrainMRIDataset, get_transforms, download_kaggle_dataset
+from dataset import BrainMRIDataset, get_transforms, get_mri_dataset_path
 from model import ResNetSEBrainTumor
 
-def train_model(data_dir="./data/brain-tumor-mri-dataset", epochs=15, batch_size=32, lr=1e-3):
+def train_model(epochs=15, batch_size=32, lr=1e-3):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on device: {device}")
     
+    data_dir = get_mri_dataset_path()
     train_tf, val_tf = get_transforms()
+    
     train_ds = BrainMRIDataset(os.path.join(data_dir, "Training"), transform=train_tf)
     val_ds = BrainMRIDataset(os.path.join(data_dir, "Testing"), transform=val_tf)
 
@@ -63,7 +65,6 @@ def train_model(data_dir="./data/brain-tumor-mri-dataset", epochs=15, batch_size
         val_acc = (val_correct / val_total) * 100
         print(f"Epoch [{epoch:02d}/{epochs:02d}] - Train Acc: {train_acc:.2f}% | Val Acc: {val_acc:.2f}%")
 
-        # Save Checkpoints (for Epoch Probing & Best Weight)
         torch.save(model.state_dict(), f"./checkpoints/model_epoch_{epoch}.pth")
         if val_acc > best_acc:
             best_acc = val_acc
@@ -72,5 +73,4 @@ def train_model(data_dir="./data/brain-tumor-mri-dataset", epochs=15, batch_size
     print(f"\nTraining Complete. Best Test Accuracy: {best_acc:.2f}%")
 
 if __name__ == "__main__":
-    download_kaggle_dataset()
     train_model()
