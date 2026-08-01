@@ -1,5 +1,4 @@
 import torch
-import torch.nn.functional as F
 import numpy as np
 import cv2
 
@@ -46,7 +45,6 @@ class GradCAM:
         return cam, target_class
 
 def get_saliency_map(model, input_tensor):
-    """Computes Vanilla Gradient Saliency Map"""
     model.eval()
     input_tensor.requires_grad_()
     output = model(input_tensor)
