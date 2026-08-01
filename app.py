@@ -10,9 +10,9 @@ from xai import GradCAM, get_saliency_map
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load Best Model
 model = ResNetSEBrainTumor(num_classes=4).to(device)
 checkpoint_path = "./checkpoints/best_model.pth"
+
 if torch.cuda.is_available():
     model.load_state_dict(torch.load(checkpoint_path))
 else:
@@ -29,21 +29,20 @@ def predict_and_explain(raw_img):
     img_pil = Image.fromarray(raw_img).convert("RGB")
     input_tensor = val_transform(img_pil).unsqueeze(0).to(device)
 
-    # Output probabilities
     with torch.no_grad():
         logits = model(input_tensor)
         probs = torch.softmax(logits, dim=1)[0].cpu().numpy()
 
     conf_dict = {CLASSES[i]: float(probs[i]) for i in range(len(CLASSES))}
 
-    # Compute Grad-CAM
+    # Grad-CAM
     cam, target_cls = grad_cam.generate(input_tensor)
     orig_img_cv = cv2.resize(raw_img, (224, 224))
     heatmap = cv2.applyColorMap(np.uint8(255 * cam), cv2.COLORMAP_JET)
     heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
     gradcam_overlay = cv2.addWeighted(orig_img_cv, 0.6, heatmap, 0.4, 0)
 
-    # Compute Saliency Map
+    # Saliency Map
     saliency_input = val_transform(img_pil).unsqueeze(0).to(device)
     saliency = get_saliency_map(model, saliency_input)
     saliency_colored = cv2.applyColorMap(np.uint8(255 * saliency), cv2.COLORMAP_HOT)
@@ -51,7 +50,6 @@ def predict_and_explain(raw_img):
 
     return conf_dict, gradcam_overlay, saliency_colored
 
-# Gradio Interface
 with gr.Blocks(title="Brain Tumor Diagnosis & Explainability (XAI)") as demo:
     gr.Markdown("# 🧠 Brain Tumor MRI Classification with Visual Explainability")
     gr.Markdown("Upload a brain MRI scan to predict tumor stage and inspect **Grad-CAM** and **Saliency Map** activations.")
