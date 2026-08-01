@@ -1,34 +1,22 @@
 import os
-import zipfile
+import kagglehub
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image
 
 CLASSES = ["glioma", "meningioma", "notumor", "pituitary"]
 CLASS_TO_IDX = {c: i for i, c in enumerate(CLASSES)}
 
-def download_kaggle_dataset(dataset_slug="masoudnickparvar/brain-tumor-mri-dataset", download_dir="./data"):
+def get_mri_dataset_path():
     """
-    Downloads and extracts dataset from Kaggle.
-    Requires kaggle.json in ~/.kaggle/ or KAGGLE_USERNAME and KAGGLE_KEY set.
+    Downloads or retrieves cached dataset path via kagglehub.
+    No need for manual kaggle.json management.
     """
-    os.makedirs(download_dir, exist_ok=True)
-    target_path = os.path.join(download_dir, "brain-tumor-mri-dataset")
-    
-    if not os.path.exists(target_path):
-        print(f"Downloading Kaggle dataset: {dataset_slug}...")
-        os.system(f"kaggle datasets download -d {dataset_slug} -p {download_dir}")
-        zip_file = [f for f in os.listdir(download_dir) if f.endswith('.zip')][0]
-        zip_path = os.path.join(download_dir, zip_file)
-        
-        print("Extracting dataset...")
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(target_path)
-        os.remove(zip_path)
-        print("Dataset setup complete.")
-    else:
-        print("Dataset already exists locally.")
+    print("Downloading/loading dataset via kagglehub...")
+    path = kagglehub.dataset_download("masoudnickparvar/brain-tumor-mri-dataset")
+    print(f"Dataset ready at: {path}")
+    return path
 
 def get_transforms(img_size=224):
     train_transform = transforms.Compose([
