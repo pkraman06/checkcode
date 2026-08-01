@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from dataset import BrainMRIDataset, get_transforms, get_mri_dataset_path
 from model import ResNetSEBrainTumor
 
-def train_model(epochs=15, batch_size=32, lr=1e-3):
+def train_model(epochs=20, batch_size=32, lr=1e-3):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on device: {device}")
     
