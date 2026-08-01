@@ -1,17 +1,15 @@
 import os
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import numpy as np
 import matplotlib.pyplot as plt
 
-from dataset import BrainMRIDataset, get_transforms
+from dataset import BrainMRIDataset, get_transforms, get_mri_dataset_path
 from model import ResNetSEBrainTumor
 
 def extract_features_at_layer(model, dataloader, layer_idx, device):
-    """Extracts features from internal activation maps via global average pooling."""
     model.eval()
     features, labels = [], []
     with torch.no_grad():
@@ -24,7 +22,8 @@ def extract_features_at_layer(model, dataloader, layer_idx, device):
             labels.append(lbls.numpy())
     return np.vstack(features), np.concatenate(labels)
 
-def run_linear_probing(data_dir="./data/brain-tumor-mri-dataset"):
+def run_linear_probing():
+    data_dir = get_mri_dataset_path()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_tf, val_tf = get_transforms()
     
@@ -34,7 +33,7 @@ def run_linear_probing(data_dir="./data/brain-tumor-mri-dataset"):
     model = ResNetSEBrainTumor(num_classes=4).to(device)
     model.load_state_dict(torch.load("./checkpoints/best_model.pth", map_location=device))
 
-    print("\n--- Running Depth Linear Probing Across Layers ---")
+    print("\n--- Running Linear Depth Probing Across Layers ---")
     layer_accs = []
     for layer_idx in range(4):
         X_train, y_train = extract_features_at_layer(model, train_loader, layer_idx, device)
@@ -46,7 +45,6 @@ def run_linear_probing(data_dir="./data/brain-tumor-mri-dataset"):
         layer_accs.append(acc)
         print(f"Layer {layer_idx + 1} Linear Probing Acc: {acc:.2f}%")
 
-    # Plotting Depth Probing
     plt.figure(figsize=(6, 4))
     plt.plot([1, 2, 3, 4], layer_accs, marker='o', color='crimson')
     plt.title("Representation Separability across Network Depth")
