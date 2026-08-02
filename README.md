@@ -1,1 +1,33 @@
-# checkcode
+Brain Tumor MRI Classification with Explainability & Training DynamicsAn end-to-end deep learning framework designed for multi-class brain tumor identification from MRI scans. Beyond standard classification, this repository includes quantitative representation probes across model depth and training time, alongside feature-attribution explainability mechanisms (Grad-CAM and Saliency Maps).📌 Executive Summary & Topic ImportanceBrain tumors are among the most aggressive forms of cancer, making early and precise diagnosis vital for treatment planning, surgical intervention, and patient prognosis. High-resolution Magnetic Resonance Imaging (MRI) is the primary non-invasive modality used for diagnosis. However, manual interpretation of MRI scans by radiologists can be time-consuming and subject to inter-observer variability, particularly across structurally similar soft tissue lesions.This project addresses three fundamental challenges in medical AI:Diagnostic Accuracy: Utilizing a custom Residual Convolutional Neural Network enhanced with Squeeze-and-Excitation (SE) Attention to classify scans into four distinct categories: Glioma, Meningioma, Pituitary, and No Tumor.Clinical Interpretability (Explainability): Medical practitioners cannot rely on black-box predictions. By integrating Grad-CAM and Vanilla Gradient Saliency Maps, the pipeline visually highlights the exact spatial regions (tumoral tissue, edema, or healthy anatomy) that influence the model's decision.Model Dynamics & Representation Analysis: Understanding how and when deep networks learn medical representations. Using Linear Probing Analysis, this system quantifies how class separability evolves both across network depth (layer-by-layer) and across training epochs (time-series dynamics).🎯 Target Classification CategoriesClassClinical OverviewPrimary MRI FeaturesGliomaOriginates in the glial cells; highly invasive with irregular borders.Heterogeneous intensity, surrounding edema.MeningiomaArises from the meninges surrounding the brain and spinal cord.Well-circumscribed, extra-axial mass, often dural-based.PituitaryBenign tumors originating in the pituitary gland at the base of the skull.Sellar/suprasellar mass compressing adjacent structures.No TumorNormal brain anatomy devoid of pathologic tissue or space-occupying lesions.Symmetrical structures, expected tissue contrast.🏗️ System Architecture & Methodology[ Input MRI Scan (224x224x3) ]
+             │
+             ▼
+   [ Stem Conv & Downsample ]
+             │
+             ▼
+    [ Stage 1: ResNet + SE ]  ──►  Linear Probe 1
+             │
+             ▼
+    [ Stage 2: ResNet + SE ]  ──►  Linear Probe 2
+             │
+             ▼
+    [ Stage 3: ResNet + SE ]  ──►  Linear Probe 3
+             │
+             ▼
+    [ Stage 4: ResNet + SE ]  ──►  Linear Probe 4 & Grad-CAM Target
+             │
+             ▼
+[ Global Avg Pooling + Linear Head ]  ──► [ Prediction Output ]
+1. Neural Network ArchitectureResNet Backbone: Leverages residual connections to mitigate vanishing gradients and enable effective deep feature extraction.Squeeze-and-Excitation (SE) Attention: Dynamically recalibrates channel-wise feature responses by explicitly modeling inter-channel interdependencies, allowing the network to focus on high-priority tumor features while suppressing background noise.2. Training Dynamics StrategyOptimization: AdamW optimizer paired with a Cosine Annealing with Warm Restarts learning rate schedule.Mixed Precision (AMP): Accelerates training and optimizes memory footprint via native PyTorch automatic mixed precision.Regularization: Label smoothing to prevent overconfidence in predictions and improve generalization on out-of-distribution test samples.3. Representation-Learning ProbingDepth Probing: Freezes feature maps at each of the 4 residual stages and trains independent linear logistic regression classifiers to measure where linear separability emerges across network layers.Temporal Probing: Evaluates penultimate embeddings extracted from periodic training checkpoints to observe how class boundaries form throughout the training lifecycle.4. Visual ExplainabilityGrad-CAM: Generates class-activation heatmaps using gradients flowing into the final convolutional layer, projecting spatial visual evidence back onto the original MRI.Saliency Maps: Computes direct pixel-level gradients with respect to the output score, revealing raw pixel sensitivities.📂 Project Structure├── config.py           # Centralized configuration (paths, hyperparameters, URLs)
+├── dataset.py          # Data loaders, dataset definitions, and augmentation pipelines
+├── download_data.py    # Kaggle dataset automated retrieval utility
+├── evaluate.py         # Testing suite: accuracy, confusion matrix, error analysis
+├── explainability.py   # Grad-CAM and Saliency Map algorithms
+├── model.py            # Residual CNN with Squeeze-and-Excitation attention blocks
+├── probe.py            # Linear probing routines across layers and training epochs
+├── app.py              # Interactive Gradio web interface
+├── train.py            # Training pipeline (AMP, scheduling, checkpointing)
+└── utils.py            # Random seeds, metric tracking, and plotting utilities
+🛠️ Execution Pipeline1. Dataset SetupDownload and organize the dataset into the expected layout:Plaintextdata/
+  ├── Training/ (glioma, meningioma, notumor, pituitary)
+  └── Testing/  (glioma, meningioma, notumor, pituitary)
+Automated execution via script: python download_data.py2. Model Training & EvaluationTrain: Run python train.py to train the SE-ResNet model, generate validation metrics, save periodic checkpoints (checkpoints/epoch_XXX.pt), and output training curves.Evaluate: Run python evaluate.py to compute test dataset accuracy, generate confusion matrices, and isolate top misclassified pairs for clinical error auditing.3. Feature Probing & Interactive AnalysisRepresentation Probing: Run python probe.py to calculate representation linear separability across network stages and epoch checkpoints.Interactive Dashboard: Launch python app.py to open the local Gradio dashboard featuring live scan prediction, real-time Grad-CAM/Saliency visualizers, and interactive training dynamic plots.📊 Key Artifacts & Output DeliverablesTraining and evaluation generate structured artifacts inside the results/ folder:training_curves.png & history.json: Epoch-by-epoch loss, accuracy, and learning rate progression.confusion_matrix.png & classification_report.json: Per-class performance breakdown (Precision, Recall, F1-Score).probe_by_layer.png: Quantitative visualization of feature quality across depth stages.probe_by_checkpoint.png: Trajectory of feature representation quality across epochs.🔬 Technologies UsedCore Framework: PyTorch, TorchvisionData & Machine Learning: Scikit-Learn, NumPy, PandasImage Processing & Visualization: OpenCV, Matplotlib, SeabornInterface: Gradio
